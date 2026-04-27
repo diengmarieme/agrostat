@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AgroStat — Mon Dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <div class="logo-icon-wrap">🌱</div>
+      <div>
+        <div class="logo-title">AgroStat IoT</div>
+        <div class="logo-sub" id="hdr-parcelles">--</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-pills" id="header-pills">
+    <div class="hpill"><div class="hpill-dot dot-green"></div><span id="hp-temp">--</span></div>
+    <div class="hpill"><div class="hpill-dot dot-blue"></div><span id="hp-hum">--</span></div>
+    <div class="hpill"><div class="hpill-dot dot-green"></div><span id="hp-ph">--</span></div>
+    <div class="hpill"><div class="hpill-dot dot-red"></div><span id="hp-anom">0 alerte(s)</span></div>
+  </div>
+  <div class="header-right">
+    <div class="hdr-datetime" id="datetime">--</div>
+    <div class="hdr-user">
+      <div class="hdr-avatar" id="hdr-initiales">?</div>
+      <span id="hdr-nom">--</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">🚪</button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-nav">
+      <div class="nav-section-title">Navigation</div>
+      <a class="nav-item active" onclick="goTo('dashboard',this)"><span class="nav-icon">📊</span>Tableau de bord</a>
+      <a class="nav-item" onclick="goTo('alertes',this)"><span class="nav-icon">🚨</span>Alertes<span class="nav-badge" id="nav-badge-alertes">0</span></a>
+      <a class="nav-item" onclick="goTo('mesures',this)"><span class="nav-icon">📋</span>Mes Mesures</a>
+      <a class="nav-item" onclick="goTo('parcelles',this)"><span class="nav-icon">🌾</span>Mes Parcelles</a>
+      <a class="nav-item" onclick="goTo('capteurs',this)"><span class="nav-icon">📡</span>Mes Capteurs</a>
+      <a class="nav-item" onclick="goTo('evolution',this)"><span class="nav-icon">📈</span>Évolution</a>
+      <a class="nav-item" onclick="goTo('profil',this)"><span class="nav-icon">👤</span>Mon Profil</a>
+    </div>
+    <div class="sidebar-bottom" id="sidebar-parcelles-list"></div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <section id="sec-dashboard" class="section active">
+      <div class="page-header">
+        <div><div class="page-title">Tableau de bord</div><div class="page-sub">Vue en temps réel de vos parcelles</div></div>
+        <div class="hdr-datetime" style="font-size:11px;color:var(--gray-400)">Auto-refresh 30s</div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card kv-temp-border">
+          <div class="kpi-visual kv-temp"><span class="kpi-ico">🌡️</span></div>
+          <div class="kpi-body"><div class="kpi-value" id="kpi-temp">--</div><div class="kpi-label">Température</div><div class="kpi-hint" id="hint-temp">--</div></div>
+        </div>
+        <div class="kpi-card kv-hum-border">
+          <div class="kpi-visual kv-hum"><span class="kpi-ico">💧</span></div>
+          <div class="kpi-body"><div class="kpi-value" id="kpi-hum">--</div><div class="kpi-label">Humidité</div><div class="kpi-hint" id="hint-hum">--</div></div>
+        </div>
+        <div class="kpi-card kv-ph-border">
+          <div class="kpi-visual kv-ph"><span class="kpi-ico">🧪</span></div>
+          <div class="kpi-body"><div class="kpi-value" id="kpi-ph">--</div><div class="kpi-label">pH Sol</div><div class="kpi-hint" id="hint-ph">--</div></div>
+        </div>
+        <div class="kpi-card kv-anom-border">
+          <div class="kpi-visual kv-anom"><span class="kpi-ico">⚠️</span></div>
+          <div class="kpi-body"><div class="kpi-value danger" id="kpi-anom">0</div><div class="kpi-label">Anomalies</div><div class="kpi-hint" id="hint-anom">--</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Évolution temps réel</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-secondary filter-btn active" onclick="filtreChart('all',this)">Tout</button>
+            <button class="btn btn-sm btn-secondary filter-btn" onclick="filtreChart('temperature',this)">Temp.</button>
+            <button class="btn btn-sm btn-secondary filter-btn" onclick="filtreChart('humidite',this)">Humid.</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="padding:16px"><canvas id="chart-main"></canvas></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><span class="card-title">💡 Recommandations</span></div>
+          <div class="card-body" id="reco-list"><div class="loading-state">Chargement...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 Moyennes 24h</span></div>
+          <div class="card-body" id="moyennes-list"><div class="loading-state">Chargement...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ ALERTES ══ -->
+    <section id="sec-alertes" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Alertes Intelligentes</div><div class="page-sub">Détection automatique — recommandations agronomiques</div></div>
+      </div>
+      <div class="alert-summary">
+        <div class="ascard crit"><div class="ascard-n" id="as-crit">0</div><div class="ascard-l">Critiques</div></div>
+        <div class="ascard warn"><div class="ascard-n" id="as-warn">0</div><div class="ascard-l">Attention</div></div>
+        <div class="ascard ok"  ><div class="ascard-n" id="as-ok">0</div><div class="ascard-l">Normales</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🚨 Détail des alertes</span></div>
+        <div class="card-body" id="alertes-detail"><div class="loading-state">Analyse en cours...</div></div>
+      </div>
+    </section>
+
+    <!-- ══ MESURES ══ -->
+    <section id="sec-mesures" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Mes Mesures</div><div class="page-sub">100 dernières mesures de vos capteurs</div></div>
+        <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇️ Export CSV</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Historique</span>
+          <div style="display:flex;gap:8px">
+            <select class="form-control" style="width:140px" id="f-type" onchange="filtrerTab()">
+              <option value="">Tous les types</option>
+              <option value="temperature">Température</option>
+              <option value="humidite">Humidité</option>
+              <option value="ph_sol">pH Sol</option>
+            </select>
+            <select class="form-control" style="width:140px" id="f-parcelle" onchange="filtrerTab()">
+              <option value="">Toutes les parcelles</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-scroll" id="mesures-tbl"><div class="loading-state">Chargement...</div></div>
+        <div id="mesures-pag"></div>
+      </div>
+    </section>
+
+    <!-- ══ PARCELLES ══ -->
+    <section id="sec-parcelles" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Mes Parcelles</div><div class="page-sub">Gérez vos parcelles agricoles</div></div>
+        <button class="btn btn-primary" onclick="ouvrirModalParcelle()">➕ Ajouter une parcelle</button>
+      </div>
+      <div class="parcelle-cards" id="parcelles-grid"><div class="loading-state">Chargement...</div></div>
+    </section>
+
+    <!-- ══ CAPTEURS ══ -->
+    <section id="sec-capteurs" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Mes Capteurs</div><div class="page-sub">Gérez vos capteurs IoT</div></div>
+        <button class="btn btn-primary" onclick="ouvrirModalCapteur()">📡 Ajouter un capteur</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📡 Liste des capteurs</span></div>
+        <div class="tbl-scroll" id="capteurs-tbl"><div class="loading-state">Chargement...</div></div>
+      </div>
+    </section>
+
+    <!-- ══ ÉVOLUTION ══ -->
+    <section id="sec-evolution" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Évolution d'un capteur</div><div class="page-sub">Analyse horaire min / moy / max</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔬 Sélection</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-control" style="width:260px" id="sel-capteur-evo"></select>
+            <button class="btn btn-primary btn-sm" onclick="chargerEvolution()">Analyser</button>
+          </div>
+        </div>
+        <div class="evo-bar" id="evo-stats" style="display:none"></div>
+        <div class="chart-wrap" style="padding:16px"><canvas id="chart-evo"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ══ PROFIL ══ -->
+    <section id="sec-profil" class="section">
+      <div class="page-title" style="margin-bottom:16px">Mon Profil</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="profil-avatar-wrap">
+            <div class="profil-avatar" id="profil-avatar">?</div>
+            <div class="profil-name" id="profil-nom">--</div>
+            <div class="profil-email" id="profil-email">--</div>
+            <div class="profil-badge">🌾 Agriculteur</div>
+          </div>
+          <div class="card-body">
+            <div class="stat-row"><span class="stat-label">📅 Membre depuis</span><span class="stat-val" id="profil-date">--</span></div>
+            <div class="stat-row"><span class="stat-label">🌾 Parcelles</span><span class="stat-val" id="profil-nb-parc">--</span></div>
+            <div class="stat-row"><span class="stat-label">📡 Capteurs</span><span class="stat-val" id="profil-nb-cap">--</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">✏️ Modifier mes informations</span></div>
+          <div class="card-body">
+            <div class="error-msg" id="profil-err"></div>
+            <div class="success-msg" id="profil-ok"></div>
+            <div class="form-group"><label>Nom complet</label><input class="form-control" id="edit-nom" placeholder="Votre nom"/></div>
+            <div class="form-group"><label>Nouveau mot de passe</label><input type="password" class="form-control" id="edit-pwd" placeholder="Laisser vide pour ne pas changer"/></div>
+            <button class="btn btn-primary" onclick="sauvegarderProfil()">💾 Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- LOGS -->
+<div class="logs-bar">
+  <span class="logs-label">LOGS</span>
+  <div id="logs">Démarrage...</div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- MODAL PARCELLE -->
+<div class="modal-overlay" id="modal-parcelle">
+  <div class="modal">
+    <div class="modal-title">🌾 Ajouter une parcelle</div>
+    <div class="error-msg" id="mp-err"></div>
+    <div class="form-group"><label>Nom de la parcelle</label><input class="form-control" id="mp-nom" placeholder="Ex: Parcelle Nord"/></div>
+    <div class="form-group"><label>Localisation</label><input class="form-control" id="mp-loc" placeholder="Ex: Bambey, Sénégal"/></div>
+    <div class="form-group"><label>Superficie (hectares)</label><input type="number" class="form-control" id="mp-sup" placeholder="Ex: 2.5" step="0.1"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fermerModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="ajouterParcelle()">✅ Créer la parcelle</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAPTEUR -->
+<div class="modal-overlay" id="modal-capteur">
+  <div class="modal">
+    <div class="modal-title">📡 Ajouter un capteur</div>
+    <div class="error-msg" id="mc-err"></div>
+    <div class="form-group"><label>ID du capteur</label><input class="form-control" id="mc-id" placeholder="Ex: CAP_001"/></div>
+    <div class="form-group"><label>Type</label>
+      <select class="form-control" id="mc-type">
+        <option value="temperature">🌡️ Température</option>
+        <option value="humidite">💧 Humidité</option>
+        <option value="ph_sol">🧪 pH Sol</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Parcelle associée</label><select class="form-control" id="mc-parcelle"></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fermerModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="ajouterCapteur()">📡 Ajouter le capteur</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

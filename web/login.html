@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AgroStat — Connexion</title>
+  <link rel="stylesheet" href="css/auth.css"/>
+</head>
+<body>
+<div class="auth-bg">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-icon">🌱</span>
+      <h1>AgroStat IoT</h1>
+      <p>Plateforme de surveillance agricole</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="showTab('login')">Connexion</button>
+      <button class="tab-btn" onclick="showTab('register')">Inscription</button>
+    </div>
+
+    <!-- CONNEXION -->
+    <div id="tab-login" class="tab-content active">
+      <div class="error-box" id="login-error"></div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="votre@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-pwd" placeholder="••••••••"/>
+      </div>
+      <button class="btn-primary" onclick="login()" id="btn-login">🔐 Se connecter</button>
+      <div class="demo-accounts">
+        <div class="demo-title">Comptes de démonstration</div>
+        <div class="demo-row" onclick="fillLogin('admin@agrostat.com','admin123')">
+          <span>👑 Admin</span><span>admin@agrostat.com / admin123</span>
+        </div>
+        <div class="demo-row" onclick="fillLogin('marieme@agrostat.com','marieme123')">
+          <span>👤 Mariéme</span><span>marieme@agrostat.com / marieme123</span>
+        </div>
+        <div class="demo-row" onclick="fillLogin('sophia@agrostat.com','sophia123')">
+          <span>👤 Sophia</span><span>sophia@agrostat.com / sophia123</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSCRIPTION -->
+    <div id="tab-register" class="tab-content">
+      <div class="error-box" id="register-error"></div>
+      <div class="success-box" id="register-success"></div>
+      <div class="form-group">
+        <label>Nom complet</label>
+        <input type="text" id="reg-nom" placeholder="Prénom NOM"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="votre@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Mot de passe (min 6 caractères)</label>
+        <input type="password" id="reg-pwd" placeholder="••••••••"/>
+      </div>
+      <div class="form-group">
+        <label>Nom de votre parcelle</label>
+        <input type="text" id="reg-parcelle" placeholder="Ex: Ma Ferme"/>
+      </div>
+      <div class="form-group">
+        <label>Localisation</label>
+        <input type="text" id="reg-loc" placeholder="Ex: Bambey, Sénégal"/>
+      </div>
+      <button class="btn-primary" onclick="register()" id="btn-register">✅ Créer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "http://localhost:5000";
+
+function showTab(t) {
+  document.querySelectorAll('.tab-btn,.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`#tab-${t}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function fillLogin(email, pwd) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-pwd').value = pwd;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function hideError(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+async function login() {
+  hideError('login-error');
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value.trim();
+  if (!email || !pwd) { showError('login-error','⚠️ Remplissez tous les champs'); return; }
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Connexion...';
+  try {
+    const r = await fetch(`${API}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pwd})
+    });
+    const d = await r.json();
+    if (!r.ok) { showError('login-error','❌ ' + d.erreur); return; }
+    localStorage.setItem('token', d.token);
+    localStorage.setItem('user', JSON.stringify(d.user));
+    window.location.href = d.user.role === 'admin' ? '/admin.html' : '/dashboard.html';
+  } catch(e) {
+    showError('login-error','❌ Impossible de joindre l\'API. Vérifiez Docker.');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔐 Se connecter';
+  }
+}
+
+async function register() {
+  hideError('register-error');
+  document.getElementById('register-success').style.display='none';
+  const nom      = document.getElementById('reg-nom').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const pwd      = document.getElementById('reg-pwd').value.trim();
+  const parcelle = document.getElementById('reg-parcelle').value.trim() || nom+' Parcelle';
+  const loc      = document.getElementById('reg-loc').value.trim();
+  if (!nom||!email||!pwd) { showError('register-error','⚠️ Nom, email et mot de passe obligatoires'); return; }
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Création...';
+  try {
+    const r = await fetch(`${API}/auth/register`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({nom_complet:nom, email, password:pwd, parcelle_nom:parcelle, localisation:loc})
+    });
+    const d = await r.json();
+    if (!r.ok) { showError('register-error','❌ '+d.erreur); return; }
+    const s = document.getElementById('register-success');
+    s.textContent = '✅ ' + d.message + ' Vous pouvez maintenant vous connecter.';
+    s.style.display = 'block';
+    setTimeout(()=>showTab({target:document.querySelector('.tab-btn')},'login'),2000);
+  } catch(e) {
+    showError('register-error','❌ Erreur réseau');
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ Créer mon compte';
+  }
+}
+
+document.addEventListener('keypress', e => { if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>

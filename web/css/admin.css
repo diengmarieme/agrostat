@@ -1,0 +1,40 @@
+/* Admin overrides */
+.admin-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+.admin-badge { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.3); color: #fbbf24; }
+
+.admin-kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.admin-kpi {
+  background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--gray-200);
+  padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px;
+  border-left: 4px solid var(--gray-300); transition: transform .2s;
+}
+.admin-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.admin-kpi.blue   { border-left-color: var(--blue-500);   }
+.admin-kpi.green  { border-left-color: var(--green-500);  }
+.admin-kpi.orange { border-left-color: var(--orange-500); }
+.admin-kpi.purple { border-left-color: var(--purple-500); }
+.ak-icon { font-size: 26px; }
+.ak-n { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+.ak-l { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+/* Clients table */
+.ctbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ctbl thead tr { background: #0f172a; }
+.ctbl thead th { padding: 10px 14px; color: var(--white); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; text-align: left; }
+.ctbl tbody tr { border-bottom: 1px solid var(--gray-100); transition: background .1s; }
+.ctbl tbody tr:hover td { background: var(--gray-50); }
+.ctbl td { padding: 11px 14px; color: var(--gray-600); vertical-align: middle; }
+.role-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 50px; font-size: 10.5px; font-weight: 700; }
+.role-admin  { background: var(--amber-100); color: #92400e; }
+.role-client { background: var(--green-100); color: var(--green-800); }
+.status-active   { color: var(--green-600); font-weight: 700; font-size: 11.5px; }
+.status-inactive { color: var(--red-500);   font-weight: 700; font-size: 11.5px; }
+.action-btns { display: flex; gap: 6px; }
+
+/* Sidebar admin */
+.sidebar-admin { background: #0f172a; }
+.sidebar-admin .nav-item { color: #94a3b8; }
+.sidebar-admin .nav-item:hover { background: rgba(255,255,255,.07); color: var(--white); }
+.sidebar-admin .nav-item.active { background: rgba(16,185,129,.15); color: #6ee7b7; }
+.sidebar-admin .nav-item.active::before { background: var(--green-500); }
+.sidebar-admin .nav-section-title { color: #475569; }

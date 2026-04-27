@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AgroStat — Administration</title>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <link rel="stylesheet" href="css/admin.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="header admin-header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <div class="logo-icon-wrap" style="background:rgba(245,158,11,.2)">🌿</div>
+      <div>
+        <div class="logo-title">AgroStat — Administration</div>
+        <div class="logo-sub">Contrôle total de la plateforme</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="hdr-datetime" id="datetime">--</div>
+    <div class="hdr-user admin-badge">👑 Administrateur</div>
+    <button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar sidebar-admin">
+    <div class="sidebar-nav">
+      <div class="nav-section-title">Administration</div>
+      <a class="nav-item active" onclick="goTo('overview',this)"><span class="nav-icon">📊</span>Vue globale</a>
+      <a class="nav-item" onclick="goTo('clients',this)"><span class="nav-icon">👥</span>Clients<span class="nav-badge green" id="badge-clients">0</span></a>
+      <a class="nav-item" onclick="goTo('parcelles-admin',this)"><span class="nav-icon">🌾</span>Parcelles</a>
+      <a class="nav-item" onclick="goTo('capteurs-admin',this)"><span class="nav-icon">📡</span>Capteurs</a>
+      <a class="nav-item" onclick="goTo('mesures-admin',this)"><span class="nav-icon">📋</span>Toutes les mesures</a>
+      <a class="nav-item" onclick="goTo('ajouter-client',this)"><span class="nav-icon">➕</span>Nouveau client</a>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- VUE GLOBALE -->
+    <section id="sec-overview" class="section active">
+      <div class="page-header">
+        <div><div class="page-title">Vue globale</div><div class="page-sub">Supervision de toute la plateforme</div></div>
+        <div style="font-size:11px;color:var(--gray-400)">Auto-refresh 30s</div>
+      </div>
+      <div class="admin-kpi-grid">
+        <div class="admin-kpi blue"><span class="ak-icon">👥</span><div><div class="ak-n" id="ak-clients">--</div><div class="ak-l">Clients actifs</div></div></div>
+        <div class="admin-kpi green"><span class="ak-icon">🌾</span><div><div class="ak-n" id="ak-parcelles">--</div><div class="ak-l">Parcelles</div></div></div>
+        <div class="admin-kpi orange"><span class="ak-icon">📡</span><div><div class="ak-n" id="ak-capteurs">--</div><div class="ak-l">Capteurs actifs</div></div></div>
+        <div class="admin-kpi purple"><span class="ak-icon">📊</span><div><div class="ak-n" id="ak-mesures">--</div><div class="ak-l">Mesures MongoDB</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📈 Activité globale — toutes parcelles</span></div>
+        <div class="chart-wrap" style="padding:16px"><canvas id="chart-overview"></canvas></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Anomalies récentes</span></div>
+          <div class="card-body" id="overview-anomalies"><div class="loading-state">Chargement...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">👥 Derniers clients inscrits</span></div>
+          <div class="card-body" id="overview-clients"><div class="loading-state">Chargement...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section id="sec-clients" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Gestion des clients</div><div class="page-sub">Voir, activer, désactiver ou supprimer des comptes</div></div>
+        <button class="btn btn-primary" onclick="goTo('ajouter-client', document.querySelector('[onclick*=ajouter]'))">➕ Nouveau client</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">👥 Liste des comptes</span>
+          <input class="form-control" style="width:220px" placeholder="🔍 Rechercher..." id="search-client" oninput="filtrerClients()"/>
+        </div>
+        <div class="tbl-scroll" id="clients-tbl"><div class="loading-state">Chargement...</div></div>
+      </div>
+    </section>
+
+    <!-- PARCELLES ADMIN -->
+    <section id="sec-parcelles-admin" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Toutes les parcelles</div><div class="page-sub">Vue complète de toutes les parcelles</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🌾 Parcelles enregistrées</span></div>
+        <div class="tbl-scroll" id="all-parcelles-tbl"><div class="loading-state">Chargement...</div></div>
+      </div>
+    </section>
+
+    <!-- CAPTEURS ADMIN -->
+    <section id="sec-capteurs-admin" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Tous les capteurs</div><div class="page-sub">Supervision de tous les capteurs IoT</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📡 Capteurs actifs</span>
+          <select class="form-control" style="width:160px" id="admin-filtre-type-cap" onchange="filtrerCapteursAdmin()">
+            <option value="">Tous les types</option>
+            <option value="temperature">Température</option>
+            <option value="humidite">Humidité</option>
+            <option value="ph_sol">pH Sol</option>
+          </select>
+        </div>
+        <div class="tbl-scroll" id="all-capteurs-tbl"><div class="loading-state">Chargement...</div></div>
+      </div>
+    </section>
+
+    <!-- MESURES ADMIN -->
+    <section id="sec-mesures-admin" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Toutes les mesures</div><div class="page-sub">Données en temps réel — tous les clients</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 Flux de données</span>
+          <div style="display:flex;gap:8px">
+            <select class="form-control" style="width:150px" id="admin-f-type" onchange="filtrerMesuresAdmin()">
+              <option value="">Tous les types</option>
+              <option value="temperature">Température</option>
+              <option value="humidite">Humidité</option>
+              <option value="ph_sol">pH Sol</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-scroll" id="admin-mesures-tbl"><div class="loading-state">Chargement...</div></div>
+      </div>
+    </section>
+
+    <!-- AJOUTER CLIENT -->
+    <section id="sec-ajouter-client" class="section">
+      <div class="page-title" style="margin-bottom:16px">➕ Ajouter un nouveau client</div>
+      <div style="max-width:560px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Informations du compte</span></div>
+          <div class="card-body">
+            <div class="error-msg" id="ac-err"></div>
+            <div class="success-msg" id="ac-ok"></div>
+            <div class="form-row">
+              <div class="form-group"><label>Nom complet</label><input class="form-control" id="ac-nom" placeholder="Prénom NOM"/></div>
+              <div class="form-group"><label>Email</label><input type="email" class="form-control" id="ac-email" placeholder="client@email.com"/></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Mot de passe</label><input type="password" class="form-control" id="ac-pwd" placeholder="••••••••"/></div>
+              <div class="form-group"><label>Nom de la parcelle</label><input class="form-control" id="ac-parcelle" placeholder="Ex: Parcelle D"/></div>
+            </div>
+            <div class="form-group"><label>Localisation</label><input class="form-control" id="ac-loc" placeholder="Ex: Thiès, Sénégal"/></div>
+            <div style="display:flex;gap:10px;margin-top:4px">
+              <button class="btn btn-primary" onclick="ajouterClientAdmin()">✅ Créer le client</button>
+              <button class="btn btn-secondary" onclick="resetFormAjout()">🔄 Réinitialiser</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="logs-bar">
+  <span class="logs-label">LOGS ADMIN</span>
+  <div id="logs">Démarrage admin...</div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
