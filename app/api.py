@@ -37,7 +37,10 @@ def get_parcelles_user():
 def require_admin():
     if not is_admin(): return jsonify({"erreur":"Accès refusé"}), 403
     return None
-
+#ajouter
+@app.route("/")
+def home():
+    return "AgroStat API fonctionne 🚀"
 # ── SANTÉ ──
 @app.route("/health", methods=["GET"])
 def health(): return jsonify({"status":"ok"}), 200
